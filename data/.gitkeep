@@ -1,0 +1,2 @@
+# Placeholder to ensure data directory exists in git
+# This file ensures the data/ directory is created even if it's empty
