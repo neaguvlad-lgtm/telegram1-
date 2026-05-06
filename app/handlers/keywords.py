@@ -148,3 +148,26 @@ async def cmd_clear(message: Message):
     except Exception:
         logger.exception('Error clearing keywords')
         await message.reply('Internal error')
+
+
+@router.message(Command('known_groups'))
+async def cmd_known_groups(message: Message):
+    # Private chat only; help user know which groups titles are known
+    if message.chat.type != 'private':
+        await message.reply('Please use this command in a private chat with the bot.')
+        return
+    try:
+        groups = await models.list_user_groups(message.from_user.id)
+        if not groups:
+            await message.reply('No known groups found for your account.')
+            return
+        lines = []
+        for gid, title in groups:
+            if title:
+                lines.append(f'Group: {title} (id: {gid})')
+            else:
+                lines.append(f'Group id: {gid}')
+        await message.reply('\n'.join(lines))
+    except Exception:
+        logger.exception('Error listing known groups')
+        await message.reply('Internal error')
