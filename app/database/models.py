@@ -62,6 +62,17 @@ async def upsert_group(group_id: int, title: str):
 
 
 async def find_group_by_title(title: str):
+    """Find a group by its title, case-insensitive. Returns (group_id, title) or None."""
     conn = Database.get_conn()
-    cur = await conn.execute('SELECT group_id, title FROM groups WHERE title = ?', (title,))
-    return await cur.fetchone()
+    # Primary: exact match (case-insensitive)
+    cur = await conn.execute('SELECT group_id, title FROM groups WHERE LOWER(title) = LOWER(?)', (title,))
+    row = await cur.fetchone()
+    if row:
+        return row
+    # Fallback: try partial match (safe, case-insensitive)
+    try:
+        cur2 = await conn.execute('SELECT group_id, title FROM groups WHERE title LIKE ?', ('%' + title + '%',))
+        row2 = await cur2.fetchone()
+        return row2
+    except Exception:
+        return None
