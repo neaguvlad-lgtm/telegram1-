@@ -48,6 +48,13 @@ async def list_keywords_for_user(user_id: int) -> List[aiosqlite.Row]:
     return rows
 
 
+async def get_group_title(group_id: int) -> Optional[str]:
+    conn = Database.get_conn()
+    cur = await conn.execute('SELECT title FROM groups WHERE group_id = ?', (group_id,))
+    row = await cur.fetchone()
+    return row[0] if row else None
+
+
 async def get_keywords_for_group(group_id: int):
     conn = Database.get_conn()
     cur = await conn.execute('SELECT user_id, keyword, regex_mode FROM keywords WHERE group_id = ?', (group_id,))
