@@ -21,16 +21,16 @@ async def cmd_start(message: Message):
 
 @router.message(Command('help'))
 async def cmd_help(message: Message):
-    text = (
+        text = (
         'Commands:\n'
         '/add "Group Name" keyword1 keyword2 - add keywords for a group from private chat.\n'
-        '   (e.g. /add "Zeus" buna)\n'
-        '/remove keyword - remove a keyword for current group and user\n'
-        '/list - list your keywords (incl. group titles if available)\n'
-        '/clear - clear all keywords for current group for this user\n'
+        '   (e.g. /add "Group Name" keyword)\n'
+        '/remove keyword - remove a keyword for a group or the current group for the user (private)\n'
+        '/list - list your keywords (group and keyword view)\n'
+        '/clear - clear all keywords for a group for this user\n'
         '/known_groups - list groups you have configured keywords for (private chat)\n'
         'Notes:\n'
         '- Ensure the bot is in the group and privacy mode is disabled (BotFather /setprivacy)\n'
-        '- Your group title must match exactly (case-insensitive fallback is supported)\n'
+        '- Titles are matched with a forgiving approach (private /known_groups helps)\n'
     )
     await message.answer(text)

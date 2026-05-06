@@ -78,7 +78,11 @@ async def cmd_add(message: Message):
         # find group id by title (case-insensitive, with fallback)
         found = await models.find_group_by_title(group_name)
         if not found:
-            await message.reply(f'Group with title "{group_name}" not found. Make sure the bot has seen the group and the title matches exactly.')
+            await message.reply(
+                f'Group with title "{group_name}" not found. \n'
+                'Tip: The bot can only manage keywords for a group after it has seen at least one message in that group (privacy mode must be disabled). \n'
+                'Please go to that group, send a message, and then try /add again.'
+            )
             return
         group_id = found[0]
     else:

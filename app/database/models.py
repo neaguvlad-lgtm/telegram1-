@@ -56,12 +56,33 @@ async def get_group_title(group_id: int) -> Optional[str]:
 
 
 async def list_user_groups(user_id: int):
+    """Return list of (group_id, title or None) for groups that have keywords for the user.
+    If the group title is not known (no entry in groups table), return None for the title.
+    This provides robust known-groups listing even if titles haven't been captured yet.
+    """
     conn = Database.get_conn()
-    cur = await conn.execute(
-        'SELECT g.group_id, g.title FROM groups g JOIN keywords k ON g.group_id = k.group_id WHERE k.user_id = ? GROUP BY g.group_id, g.title',
-        (user_id,)
-    )
-    return await cur.fetchall()
+    cur = await conn.execute('SELECT DISTINCT group_id FROM keywords WHERE user_id = ?', (user_id,))
+    rows = await cur.fetchall()
+    results: list[tuple[int, Optional[str]]] = []
+    for (gid,) in rows:
+        title = None
+        try:
+            cur_t = await conn.execute('SELECT title FROM groups WHERE group_id = ?', (gid,))
+            r = await cur_t.fetchone()
+            if r:
+                title = r[0]
+        except Exception:
+            title = None
+        results.append((gid, title))
+    return results
+
+
+async def list_all_seen_groups():
+    """Return all groups that have been seen (in groups table), regardless of keywords per user."""
+    conn = Database.get_conn()
+    cur = await conn.execute('SELECT group_id, title FROM groups')
+    rows = await cur.fetchall()
+    return [(gid, t) for gid, t in rows]
 
 
 async def get_keywords_for_group(group_id: int):
