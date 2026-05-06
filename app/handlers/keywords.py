@@ -15,8 +15,9 @@ def _parse_keywords_from_text(text: str):
 
 
 def _parse_group_and_keywords(text: str):
-    """Support form: "Group Name" keyword1 keyword2 (used in private chat)
-    Group name must be quoted with double quotes. Returns (group_name, [keywords]) or (None, None)
+    """Parse private chat arguments of the form: "Group Name" kw1 kw2
+    Group name must be quoted. Keywords may be plain words or quoted strings.
+    Returns (group_name, keywords) or (None, None).
     """
     text = text.strip()
     if not text:
@@ -29,23 +30,52 @@ def _parse_group_and_keywords(text: str):
         return None, None
     group = text[1:end]
     rest = text[end+1:].strip()
-    kws = [p for p in rest.split() if p]
+    # Parse keywords robustly (allow quoted keywords as well)
+    kws = _parse_keywords_from_rest(rest)
     return group, kws
+
+
+def _parse_keywords_from_rest(rest: str):
+    """Parse rest of the string into keywords, supporting quoted or unquoted tokens."""
+    tokens = []
+    i = 0
+    while i < len(rest):
+        if rest[i] == '"':
+            j = rest.find('"', i+1)
+            if j == -1:
+                # unmatched quote, take the rest without quotes
+                tokens.append(rest[i+1:])
+                break
+            tokens.append(rest[i+1:j])
+            i = j + 1
+            continue
+        if rest[i].isspace():
+            i += 1
+            continue
+        # unquoted token
+        j = i
+        while j < len(rest) and not rest[j].isspace():
+            j += 1
+        tokens.append(rest[i:j])
+        i = j
+    return tokens
 
 
 @router.message(Command('add'))
 async def cmd_add(message: Message):
-    # Support adding from private: /add "Group Name" kw1 kw2
+    # Support adding from private: /add "Group Name" keyword1 keyword2 (or quoted keywords)
     if message.chat.type == 'private':
-        body = (message.text or '').split(' ', 1)
-        if len(body) < 2:
+        rest = (message.text or '').strip()
+        if rest.lower().startswith('/add'):
+            rest = rest[len('/add'):].strip()
+        if not rest:
             await message.reply('Usage in private: /add "Group Name" keyword1 keyword2')
             return
-        group_name, kws = _parse_group_and_keywords(body[1])
+        group_name, kws = _parse_group_and_keywords(rest)
         if not group_name or not kws:
             await message.reply('Invalid format. Use: /add "Group Name" keyword1 keyword2')
             return
-        # find group id by title
+        # find group id by title (case-insensitive, with fallback)
         found = await models.find_group_by_title(group_name)
         if not found:
             await message.reply(f'Group with title "{group_name}" not found. Make sure the bot has seen the group and the title matches exactly.')
@@ -91,11 +121,16 @@ async def cmd_list(message: Message):
         if not rows:
             await message.reply('You have no keywords configured.')
             return
+        # Build grouped view with titles when available
         text_lines = []
-        current_group = None
         for r in rows:
             gid, kw, regex_mode, created = r
-            text_lines.append(f'Group {gid}: {kw} (regex={regex_mode})')
+            try:
+                title = await models.get_group_title(gid)
+            except Exception:
+                title = None
+            display = f"Group {title or gid}: {kw} (regex={regex_mode})"
+            text_lines.append(display)
         await message.reply('\n'.join(text_lines))
     except Exception:
         logger.exception('Error listing keywords')
