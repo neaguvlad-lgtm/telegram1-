@@ -23,12 +23,14 @@ async def cmd_start(message: Message):
 async def cmd_help(message: Message):
     text = (
         'Commands:\n'
-        '/add keyword1 keyword2 - add multiple keywords for this group\n'
-        '/remove keyword - remove a keyword\n'
-        '/list - list your keywords across groups\n'
-        '/clear - clear all your keywords for this group\n'
+        '/add "Group Name" keyword1 keyword2 - add keywords for a group from private chat.\n'
+        '   (e.g. /add "Zeus" buna)\n'
+        '/remove keyword - remove a keyword for current group and user\n'
+        '/list - list your keywords (incl. group titles if available)\n'
+        '/clear - clear all keywords for current group for this user\n'
+        '/known_groups - list groups you have configured keywords for (private chat)\n'
         'Notes:\n'
-        '- Run these commands inside the group where you want keywords to apply.\n'
-        '- Disable privacy mode via BotFather to let bot see all messages.\n'
+        '- Ensure the bot is in the group and privacy mode is disabled (BotFather /setprivacy)\n'
+        '- Your group title must match exactly (case-insensitive fallback is supported)\n'
     )
     await message.answer(text)
