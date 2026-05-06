@@ -55,6 +55,15 @@ async def get_group_title(group_id: int) -> Optional[str]:
     return row[0] if row else None
 
 
+async def list_user_groups(user_id: int):
+    conn = Database.get_conn()
+    cur = await conn.execute(
+        'SELECT g.group_id, g.title FROM groups g JOIN keywords k ON g.group_id = k.group_id WHERE k.user_id = ? GROUP BY g.group_id, g.title',
+        (user_id,)
+    )
+    return await cur.fetchall()
+
+
 async def get_keywords_for_group(group_id: int):
     conn = Database.get_conn()
     cur = await conn.execute('SELECT user_id, keyword, regex_mode FROM keywords WHERE group_id = ?', (group_id,))
